@@ -1,0 +1,22 @@
+[package]
+name = "stress-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+affinity = "0.1.2"
+anyhow = "1.0"
+num_cpus = "1.16"
+tracing = "0.1"
+
+[dependencies.clap]
+version = "4.5"
+features = ["derive"]
+
+[dependencies.time]
+version = "0.3"
+features = ["local-offset", "macros"]
+
+[dependencies.tracing-subscriber]
+version = "0.3"
+features = ["time"]
