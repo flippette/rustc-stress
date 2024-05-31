@@ -31,7 +31,13 @@ fn main() -> Result<()> {
         (0..num_cpus::get_physical()).collect()
     };
 
-    info!("found projects: {projects:?}");
+    info!(
+        "found projects: {:?}",
+        projects
+            .iter()
+            .map(|entry| entry.file_name())
+            .collect::<Vec<_>>()
+    );
     info!("stressing cores: {cores:?}");
     info!("{}", "=".repeat(20));
 
