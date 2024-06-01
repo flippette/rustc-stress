@@ -21,7 +21,7 @@ pub struct Args {
     pub workdir: PathBuf,
 }
 
-/// parse a unique vec of physical core indices
+/// parse a valid physical core index
 fn core(s: &str) -> Result<usize, String> {
     match s.parse() {
         Ok(n) if n < num_cpus::get_physical() => Ok(n),
