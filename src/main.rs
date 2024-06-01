@@ -50,11 +50,7 @@ fn main() -> Result<()> {
 
         for core in &cores {
             info!("  stressing core {core}");
-            affinity::set_thread_affinity([
-                *core,
-                *core + num_cpus::get_physical(),
-            ])
-            .map_err(|err| eyre!("failed to set thread affinity: {err:?}"))?;
+            set_thread_affinity([*core, *core + num_cpus::get_physical()])?;
             let core_start = Instant::now();
 
             for project in &projects {
@@ -132,4 +128,15 @@ fn get_projects_in_cwd() -> Result<Vec<DirEntry>> {
                 .collect()
         })
         .map_err(|err| eyre!("io error: {err:?}"))
+}
+
+fn set_thread_affinity(cpus: impl AsRef<[usize]>) -> Result<()> {
+    #[cfg(unix)]
+    affinity::set_thread_affinity(cpus.as_ref())
+        .map_err(|err| eyre!("failed to set thread affinity: {err:?}"))?;
+    #[cfg(windows)]
+    affinity::set_process_affinity(cpus.as_ref())
+        .map_err(|err| eyre!("failed to set process affinity: {err:?}"))?;
+
+    Ok(())
 }

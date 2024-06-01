@@ -25,7 +25,7 @@ pub fn init_logging(log_path: &Path) -> Result<()> {
         opts.custom_flags(libc::O_SYNC);
         #[cfg(windows)]
         opts.custom_flags(
-            windows::Win32::Storage::FileSystem::FILE_FLAG_WRITE_THROUGH,
+            windows::Win32::Storage::FileSystem::FILE_FLAG_WRITE_THROUGH.0,
         );
         opts.open(log_path)?
     };
