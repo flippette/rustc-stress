@@ -6,7 +6,6 @@ use std::{
     env,
     fs::{self, DirEntry},
     ops::Sub,
-    process::{Command, Stdio},
     time::Instant,
 };
 
@@ -14,7 +13,8 @@ use clap::Parser;
 use cli::Args;
 use eyre::{ensure, eyre, Result};
 use logging::init_logging;
-use tracing::{error, info};
+use stress::stress;
+use tracing::info;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -50,47 +50,9 @@ fn main() -> Result<()> {
 
         for core in &cores {
             info!("  stressing core {core}");
-            set_thread_affinity([*core, *core + num_cpus::get_physical()])?;
             let core_start = Instant::now();
 
-            for project in &projects {
-                env::set_current_dir(project.path())?;
-                info!("    cleaning {:?}", project.file_name());
-                Command::new("cargo").arg("clean").output()?;
-
-                info!("    building {:?}", project.file_name());
-                let build_start = Instant::now();
-
-                let build_output = Command::new("cargo")
-                    .arg("build")
-                    .env("RUSTFLAGS", "")
-                    .env("PATH", env::var("PATH")?)
-                    .stdout(Stdio::piped())
-                    .stderr(Stdio::piped())
-                    .output()?;
-                if !build_output.status.success() {
-                    error!("!!! building {:?} failed !!!", project.file_name());
-                    error!("------ stdout ------");
-                    String::from_utf8(build_output.stdout)?
-                        .lines()
-                        .for_each(|line| error!("{line}"));
-                    error!("------ stderr ------");
-                    String::from_utf8(build_output.stderr)?
-                        .lines()
-                        .for_each(|line| error!("{line}"));
-                    return Err(eyre!(
-                        "failed to build {:?}",
-                        project.file_name()
-                    ));
-                }
-
-                info!(
-                    "    built {:?} in {:.2}s",
-                    project.file_name(),
-                    Instant::now().sub(build_start).as_secs_f32()
-                );
-                env::set_current_dir(&cwd)?;
-            }
+            stress([*core], &projects, 4)?;
 
             info!(
                 "  core {core} finished in {:.2}s",
@@ -132,15 +94,4 @@ fn get_projects_in_cwd() -> Result<Vec<DirEntry>> {
                 .collect()
         })
         .map_err(|err| eyre!("io error: {err:?}"))
-}
-
-fn set_thread_affinity(cpus: impl AsRef<[usize]>) -> Result<()> {
-    #[cfg(unix)]
-    affinity::set_thread_affinity(cpus.as_ref())
-        .map_err(|err| eyre!("failed to set thread affinity: {err:?}"))?;
-    #[cfg(windows)]
-    affinity::set_process_affinity(cpus.as_ref())
-        .map_err(|err| eyre!("failed to set process affinity: {err:?}"))?;
-
-    Ok(())
 }
