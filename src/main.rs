@@ -10,13 +10,14 @@ use std::{
     time::Instant,
 };
 
-use anyhow::{anyhow, Result};
 use clap::Parser;
 use cli::Args;
+use eyre::{ensure, eyre, Result};
 use logging::init_logging;
 use tracing::{error, info};
 
 fn main() -> Result<()> {
+    color_eyre::install()?;
     let args = Args::parse();
 
     let cwd = fs::canonicalize(args.workdir)?;
@@ -30,6 +31,8 @@ fn main() -> Result<()> {
     } else {
         (0..num_cpus::get_physical()).collect()
     };
+
+    ensure!(!projects.is_empty(), "no projects found");
 
     info!(
         "found projects: {:?}",
@@ -51,7 +54,7 @@ fn main() -> Result<()> {
                 *core,
                 *core + num_cpus::get_physical(),
             ])
-            .map_err(|err| anyhow!("failed to set thread affinity: {err:?}"))?;
+            .map_err(|err| eyre!("failed to set thread affinity: {err:?}"))?;
             let core_start = Instant::now();
 
             for project in &projects {
@@ -75,7 +78,7 @@ fn main() -> Result<()> {
                     error!("{}", String::from_utf8(build_output.stdout)?);
                     error!("----- stderr -----");
                     error!("{}", String::from_utf8(build_output.stderr)?);
-                    return Err(anyhow!(
+                    return Err(eyre!(
                         "failed to build {:?}",
                         project.file_name()
                     ));
@@ -128,5 +131,5 @@ fn get_projects_in_cwd() -> Result<Vec<DirEntry>> {
                 .filter(has_cargo_toml)
                 .collect()
         })
-        .map_err(|err| anyhow!("io error: {err:?}"))
+        .map_err(|err| eyre!("io error: {err:?}"))
 }

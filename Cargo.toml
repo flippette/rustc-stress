@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 affinity = "0.1.2"
-anyhow = "1.0"
+color-eyre = "0.6"
+eyre = "0.6"
 num_cpus = "1.16"
 tracing = "0.1"
 
@@ -20,3 +21,10 @@ features = ["local-offset", "macros"]
 [dependencies.tracing-subscriber]
 version = "0.3"
 features = ["time"]
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies.windows]
+version = "0.56"
+features = ["Win32_Storage_FileSystem"]

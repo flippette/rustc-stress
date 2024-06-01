@@ -1,6 +1,10 @@
+#[cfg(unix)]
+use std::os::unix::prelude::*;
+#[cfg(windows)]
+use std::os::windows::prelude::*;
 use std::{fs::File, io, path::Path};
 
-use anyhow::Result;
+use eyre::Result;
 use time::{macros::format_description, UtcOffset};
 use tracing_subscriber::{
     fmt::{layer, time::OffsetTime},
@@ -14,13 +18,25 @@ pub fn init_logging(log_path: &Path) -> Result<()> {
     let ts_offset = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
     let timer = OffsetTime::new(ts_offset, ts_format);
 
+    let file = {
+        let mut opts = File::options();
+        opts.write(true).create(true).truncate(true);
+        #[cfg(unix)]
+        opts.custom_flags(libc::O_SYNC);
+        #[cfg(windows)]
+        opts.custom_flags(
+            windows::Win32::Storage::FileSystem::FILE_FLAG_WRITE_THROUGH,
+        );
+        opts.open(log_path)?
+    };
+
     let stdout_layer = layer()
         .with_writer(io::stdout)
         .with_target(false)
         .with_level(false)
         .with_timer(timer.clone());
     let file_layer = layer()
-        .with_writer(File::create(log_path)?)
+        .with_writer(file)
         .with_target(false)
         .with_level(false)
         .with_timer(timer)
