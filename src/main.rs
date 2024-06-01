@@ -69,11 +69,15 @@ fn main() -> Result<()> {
                     .stderr(Stdio::piped())
                     .output()?;
                 if !build_output.status.success() {
-                    error!("building {:?} failed", project.file_name());
-                    error!("----- stdout -----");
-                    error!("{}", String::from_utf8(build_output.stdout)?);
-                    error!("----- stderr -----");
-                    error!("{}", String::from_utf8(build_output.stderr)?);
+                    error!("!!! building {:?} failed !!!", project.file_name());
+                    error!("------ stdout ------");
+                    String::from_utf8(build_output.stdout)?
+                        .lines()
+                        .for_each(|line| error!("{line}"));
+                    error!("------ stderr ------");
+                    String::from_utf8(build_output.stderr)?
+                        .lines()
+                        .for_each(|line| error!("{line}"));
                     return Err(eyre!(
                         "failed to build {:?}",
                         project.file_name()
