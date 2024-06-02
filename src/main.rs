@@ -10,7 +10,7 @@ use std::{
 };
 
 use clap::Parser;
-use cli::Args;
+use cli::{Args, Mode};
 use eyre::{ensure, eyre, Result};
 use logging::init_logging;
 use stress::stress;
@@ -41,23 +41,30 @@ fn main() -> Result<()> {
             .map(|entry| entry.file_name())
             .collect::<Vec<_>>()
     );
-    info!("stressing cores: {cores:?}");
+    info!("stressing cores {cores:?} in {} mode", args.mode);
     info!("{}", "=".repeat(20));
 
     for run in 0.. {
         info!("run #{run} started");
         let run_start = Instant::now();
 
-        for core in &cores {
-            info!("  stressing core {core}");
-            let core_start = Instant::now();
+        match args.mode {
+            Mode::Sequential => {
+                for core in &cores {
+                    info!("  stressing core {core}");
+                    let core_start = Instant::now();
 
-            stress([*core], &projects, 4)?;
+                    stress([*core], &projects, 4)?;
 
-            info!(
-                "  core {core} finished in {:.2}s",
-                Instant::now().sub(core_start).as_secs_f32()
-            );
+                    info!(
+                        "  core {core} took {:.2}s",
+                        Instant::now().sub(core_start).as_secs_f32()
+                    );
+                }
+            }
+            Mode::Parallel => {
+                stress(&cores, &projects, 2)?;
+            }
         }
 
         info!(
@@ -70,10 +77,6 @@ fn main() -> Result<()> {
 }
 
 fn get_projects_in_cwd() -> Result<Vec<DirEntry>> {
-    fn is_dir(entry: &DirEntry) -> bool {
-        entry.metadata().is_ok_and(|meta| meta.is_dir())
-    }
-
     fn has_cargo_toml(entry: &DirEntry) -> bool {
         fs::read_dir(entry.path()).is_ok_and(|entries| {
             entries.filter_map(Result::ok).any(|entry| {
@@ -89,7 +92,6 @@ fn get_projects_in_cwd() -> Result<Vec<DirEntry>> {
         .map(|entries| {
             entries
                 .filter_map(Result::ok)
-                .filter(is_dir)
                 .filter(has_cargo_toml)
                 .collect()
         })
