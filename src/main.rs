@@ -20,10 +20,10 @@ fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Args::parse();
 
+    init_logging(&args.log_path)?;
+
     let cwd = fs::canonicalize(args.workdir)?;
     env::set_current_dir(&cwd)?;
-
-    init_logging(&args.log_path)?;
 
     let projects = get_projects_in_cwd()?;
     let cores = if !args.cores.is_empty() {
