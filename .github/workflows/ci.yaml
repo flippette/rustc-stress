@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      pkgver: ${{ steps.set_var.outputs.pkgver }}
     strategy:
       matrix:
         target: [x86_64-unknown-linux-musl]
@@ -21,7 +23,7 @@ jobs:
           fetch-depth: 0
       - name: set pkgver env var
         run: |
-          echo "PKGVER=$(cat Cargo.toml | grep 'version' | head -n 1 | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+          echo "pkgver=$(cat Cargo.toml | grep 'version' | head -n 1 | cut -d'"' -f2)" >> $GITHUB_OUTPUT
       - name: install rust
         uses: dtolnay/rust-toolchain@nightly
         with:
@@ -42,11 +44,13 @@ jobs:
         with:
           path: artifacts
           pattern: rustc-stress-*
-          merge-multiple: true
-      - name: create release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/*
-          tag_name: v${{ needs.build.outputs.PKGVER }}
-          make_latest: true
+
+      - name: show structure
+        run: ls -R
+      # - name: create release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: artifacts/*
+      #     tag_name: v${{ needs.build.outputs.pkgver }}
+      #     make_latest: true
           
