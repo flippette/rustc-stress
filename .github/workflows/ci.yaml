@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      pkgver: ${{ steps.set_var.outputs.pkgver }}
+      pkgver: ${{ steps.set-var.outputs.PKGVER }}
     strategy:
       matrix:
         target: [x86_64-unknown-linux-musl]
@@ -22,8 +22,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: set pkgver env var
+        id: set-var
         run: |
-          echo "pkgver=$(cat Cargo.toml | grep 'version' | head -n 1 | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+          echo "PKGVER=$(cat Cargo.toml | grep 'version' | head -n 1 | cut -d'"' -f2)" \
+          >> $GITHUB_OUTPUT
       - name: install rust
         uses: dtolnay/rust-toolchain@nightly
         with:
