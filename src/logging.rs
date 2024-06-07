@@ -13,7 +13,7 @@ use tracing_subscriber::{
 };
 
 /// initialize logging to stdout and a log file
-pub fn init_logging(log_path: &Path) -> Result<()> {
+pub fn init(log_path: &Path) -> Result<()> {
     let ts_format = format_description!("[day]-[month] [hour]:[minute]");
     let ts_offset = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
     let timer = OffsetTime::new(ts_offset, ts_format);

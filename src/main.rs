@@ -3,16 +3,15 @@ mod logging;
 mod stress;
 
 use std::{
-    env,
     fs::{self, DirEntry},
     ops::Sub,
+    path::Path,
     time::Instant,
 };
 
 use clap::Parser;
 use cli::{Args, Mode};
 use eyre::{ensure, eyre, Result};
-use logging::init_logging;
 use stress::stress;
 use tracing::info;
 
@@ -20,26 +19,20 @@ fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Args::parse();
 
-    init_logging(&args.log_path)?;
+    logging::init(&args.log_path)?;
 
-    let cwd = fs::canonicalize(args.workdir)?;
-    env::set_current_dir(&cwd)?;
-
-    let projects = get_projects_in_cwd()?;
-    let cores = if !args.cores.is_empty() {
-        args.cores
-    } else {
+    let projects = projects(args.projects)?;
+    let cores = if args.cores.is_empty() {
         (0..num_cpus::get_physical()).collect()
+    } else {
+        args.cores
     };
 
     ensure!(!projects.is_empty(), "no projects found");
 
     info!(
         "found projects: {:?}",
-        projects
-            .iter()
-            .map(|entry| entry.file_name())
-            .collect::<Vec<_>>()
+        projects.iter().map(DirEntry::file_name).collect::<Vec<_>>()
     );
     info!("stressing cores {cores:?} in {} mode", args.mode);
     info!("{}", "=".repeat(20));
@@ -76,7 +69,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn get_projects_in_cwd() -> Result<Vec<DirEntry>> {
+fn projects(path: impl AsRef<Path>) -> Result<Vec<DirEntry>> {
     fn has_cargo_toml(entry: &DirEntry) -> bool {
         fs::read_dir(entry.path()).is_ok_and(|entries| {
             entries.filter_map(Result::ok).any(|entry| {
@@ -88,7 +81,7 @@ fn get_projects_in_cwd() -> Result<Vec<DirEntry>> {
         })
     }
 
-    fs::read_dir(env::current_dir()?)
+    fs::read_dir(path.as_ref())
         .map(|entries| {
             entries
                 .filter_map(Result::ok)

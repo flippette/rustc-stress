@@ -7,7 +7,6 @@ use clap::Parser;
 
 ///
 /// stress testing with rustc
-///
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
@@ -23,9 +22,9 @@ pub struct Args {
     #[arg(short, long, default_value = "seq", value_parser = mode)]
     pub mode: Mode,
 
-    /// current working directory
+    /// projects directory
     #[arg(short, long, default_value = ".")]
-    pub workdir: PathBuf,
+    pub projects: PathBuf,
 }
 
 /// stress testing mode
