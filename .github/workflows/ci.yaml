@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
       - name: set pkgver env var
         run: |
-          echo "PKGVER=$(cat Cargo.toml | grep 'version' | head -n 1 | cut -d'"' -f2)" >> $GITHUB_ENV
+          echo "PKGVER=$(cat Cargo.toml | grep 'version' | head -n 1 | cut -d'"' -f2)" >> $GITHUB_OUTPUT
       - name: install rust
         uses: dtolnay/rust-toolchain@nightly
         with:
@@ -31,7 +31,7 @@ jobs:
       - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
+          name: rustc-stress-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/rustc-stress
   release:
     needs: build
@@ -39,6 +39,10 @@ jobs:
     steps:
       - name: download artifact
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: rustc-stress-*
+          merge-multiple: true
       - name: create release
         uses: softprops/action-gh-release@v2
         with:
