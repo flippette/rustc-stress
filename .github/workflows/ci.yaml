@@ -19,6 +19,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: set pkgver env var
+        run: |
+          echo "PKGVER=$(cat Cargo.toml | grep 'version' | head -n 1 | cut -d'"' -f2)" >> $GITHUB_ENV
       - name: install rust
         uses: dtolnay/rust-toolchain@nightly
         with:
@@ -40,6 +43,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
-          tag_name: ${{ github.sha }}
+          tag_name: v${{ needs.build.outputs.PKGVER }}
           make_latest: true
           
