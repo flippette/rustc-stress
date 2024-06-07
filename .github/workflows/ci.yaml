@@ -1,31 +1,33 @@
 name: build-release
 
+permissions:
+  pull-requests: write
+  contents: write
+
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-defaults:
-  run:
-    shell: bash
+    branches:
+      - main
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: install rust
         uses: dtolnay/rust-toolchain@nightly
         with:
-          targets: "x86_64-unknown-linux-musl,aarch64-unknown-linux-musl"
+          targets: x86_64-unknown-linux-musl,aarch64-unknown-linux-musl
       - name: build
-        run: cargo build --release
-      - name: create release
-        uses: ncipollo/release-action@v1
+        run: |
+          cargo build --release --target x86_64-unknown-linux-musl
+          cargo build --release --target aarch64-unknown-linux-musl
+      - name: release
+        uses: MarcoIeni/release-plz-action@v0.5
         with:
-          artifacts: "target/x86_64-unknown-linux-musl/rustc-stress,target/aarch64-unknown-linux-musl/rustc-stress"
-          makeLatest: "legacy"
+          command: release-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
