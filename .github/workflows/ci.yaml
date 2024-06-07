@@ -1,7 +1,6 @@
 name: build-release
 
 permissions:
-  pull-requests: write
   contents: write
 
 on:
@@ -10,8 +9,11 @@ on:
       - main
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -20,14 +22,22 @@ jobs:
       - name: install rust
         uses: dtolnay/rust-toolchain@nightly
         with:
-          targets: x86_64-unknown-linux-musl,aarch64-unknown-linux-musl
+          targets: ${{ matrix.target }}
       - name: build
-        run: |
-          cargo build --release --target x86_64-unknown-linux-musl
-          cargo build --release --target aarch64-unknown-linux-musl
-      - name: release
-        uses: MarcoIeni/release-plz-action@v0.5
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          command: release-pr
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ matrix.target }}
+          uses: bin/rustc-stress-${{ matrix.target }}
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: download artifact
+        uses: actions/download-artifact@v4
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bin/rustc-stress-*
+          make_latest: true
+          
