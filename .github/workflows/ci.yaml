@@ -30,11 +30,15 @@ jobs:
           targets: ${{ matrix.target }}
       - name: build
         run: cargo build --release --target ${{ matrix.target }}
+      - name: rename artifacts
+        run: |
+          mv target/${{ matrix.target }}/release/rustc-stress \
+          target/${{ matrix.target }}/release/rustc-stress-${{ matrix.target }}
       - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rustc-stress-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/rustc-stress
+          name: ${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/rustc-stress-*
   release:
     needs: build
     runs-on: ubuntu-latest
@@ -43,7 +47,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-          pattern: rustc-stress-*
 
       - name: show structure
         run: ls -R
